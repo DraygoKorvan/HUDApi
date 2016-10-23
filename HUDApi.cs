@@ -5,11 +5,20 @@ using System.Text;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using VRage.Game.ModAPI;
 
 namespace Draygo.API
 {
 
-	public class HUDTextNI
+	public class HUDTextNI : HUDTextAPI
+	{
+		public HUDTextNI(long modId) : base(modId)
+		{
+			
+		}
+		//backwards compat
+	}
+	public class HUDTextAPI
 	{
 		#region Data
 
@@ -494,6 +503,7 @@ namespace Draygo.API
 				shadowcolor = blackshadow.ToVector4();
 				scale = 1;
 				this.message = message;
+				
 			}
 			/// <summary>
 			/// Data to transport for HUD Text Display
@@ -521,6 +531,43 @@ namespace Draygo.API
 				this.message = message;
 			}
 
+		}
+		public struct BillBoardHUDMessage
+		{
+			public long id;
+			public int ttl;
+			public Vector2D origin;
+			public string material;
+			public Options options;
+			public Vector4 bbcolor;
+			public double scale;
+			public float rotation;
+
+			/// <summary>
+			/// Creates a BillBoardHUDMessage
+			/// </summary>
+			/// <param name="messageid">ID of message, resend a message with the same ID to overwrite</param>
+			/// <param name="timetolive">How many frames the message will live.</param>
+			/// <param name="Origin">Screen origin of the billboard, from -1 to 1. </param>
+			/// <param name="BillBoardColor">Color of the billboard</param>
+			/// <param name="Material">Material of the billboard</param>
+			/// <param name="scale">Scale in size, defaults to 1</param>
+			/// <param name="rotation">Rotation in radians</param>
+			/// <param name="HideHud">Hide the billboard if the user hides his/her HUD, defaults to true</param>
+			public BillBoardHUDMessage(long messageid, int timetolive, Vector2D Origin, Color BillBoardColor, string Material, double scale = 1, float rotation = 0, bool HideHud = true)
+			{
+				id = messageid;
+				ttl = timetolive;
+				origin = Origin;
+				options = Options.None;
+				if (HideHud)
+					options |= Options.HideHud;
+				bbcolor = BillBoardColor.ToVector4();
+				this.scale = scale;
+				this.material = Material;
+				this.rotation = rotation;
+
+			}
 		}
 		public struct SpaceMessage
 		{
@@ -596,7 +643,7 @@ namespace Draygo.API
 			}
 		}
 		private bool m_heartbeat = false;
-		private long m_modId = 0;
+		protected long m_modId = 0;
 		private long currentId = 1000;
 		private readonly ushort HUDAPI_ADVMSG = 54019;
 		private readonly ushort HUDAPI_MESSAGE = 54020;
@@ -629,12 +676,34 @@ namespace Draygo.API
 			}
 			
 		}
+		public bool IsInMenu
+		{
+			get
+			{
+				if (MyAPIGateway.Gui.GetCurrentScreen != MyTerminalPageEnum.None)
+					return true;
+				try
+				{
+					if (MyAPIGateway.Gui?.ActiveGamePlayScreen != null)
+						if (MyAPIGateway.Gui.ActiveGamePlayScreen != "")
+							return true;
+				}
+				catch
+				{
+					//LOL REXXAR
+				}
+
+
+				return false;
+			}
+
+		}
 
 		/// <summary>
 		/// You must specify a modId to avoid conflicts with other mods. Just pick a random number, it probably will be fine ;) Please call .Close() during the cleanup of your mod.
 		/// </summary>
 		/// <param name="modId">ID of your mod, it is recommended you choose a unique one for each mod.</param>
-		public HUDTextNI(long modId)
+		public HUDTextAPI(long modId)
 		{
 			m_modId = modId;
 			MyAPIGateway.Multiplayer.RegisterMessageHandler(HUDAPI_RECEIVE, callback);
@@ -727,6 +796,17 @@ namespace Draygo.API
 			return message;
 		}
 		/// <summary>
+		/// Sends an already constructed BillBoardHUDMessage, if BillBoardHUDMessage has an ID of 0 it will pick the next ID.
+		/// </summary>
+		/// <param name="message">BillBoardHUDMessage being sent or resent.</param>
+		/// <returns>Returns BillBoardHUDMessage with populated ID</returns>
+		public BillBoardHUDMessage Send(BillBoardHUDMessage message)
+		{
+			var msg = Encode(ref message);
+			MyAPIGateway.Multiplayer.SendMessageTo(HUDAPI_ADVMSG, msg, MyAPIGateway.Multiplayer.MyId, true);
+			return message;
+		}
+		/// <summary>
 		/// Sends an already constructed SpaceMessage, if Spacemessage has an ID of 0 it will pick the next id. 
 		/// </summary>
 		/// <param name="message">SpaceMessage being sent or resent</param>
@@ -754,6 +834,17 @@ namespace Draygo.API
 		/// <param name="message">HUDMessage being sent or resent.</param>
 		/// <returns>Returns HUDMessage with populated ID</returns>
 		public HUDMessage SendToOthers(HUDMessage message)
+		{
+			var msg = Encode(ref message);
+			MyAPIGateway.Multiplayer.SendMessageToOthers(HUDAPI_ADVMSG, msg, true);
+			return message;
+		}
+		/// <summary>
+		/// Send already constructed BillBoardHUDMessage to others. If the BillBoardHUDMessage has an ID of 0 it will pick the next ID.
+		/// </summary>
+		/// <param name="message">BillBoardHUDMessage being sent or resent.</param>
+		/// <returns>Returns BillBoardHUDMessage with populated ID</returns>
+		public BillBoardHUDMessage SendToOthers(BillBoardHUDMessage message)
 		{
 			var msg = Encode(ref message);
 			MyAPIGateway.Multiplayer.SendMessageToOthers(HUDAPI_ADVMSG, msg, true);
@@ -820,6 +911,50 @@ namespace Draygo.API
 			Copy(ref msg, ref cz, ref lth);
 			Copy(ref msg, ref cw, ref lth);
 			Copy(ref msg, ref scale, ref lth);
+			Copy(ref msg, ref encode, ref lth);
+			return msg;
+		}
+		private byte[] Encode(ref BillBoardHUDMessage message)
+		{
+
+			ushort msgtype = 4;
+			if (message.id == 0)
+			{
+
+				message.id = GetNextID();
+			}
+
+			byte[] ver = BitConverter.GetBytes(MOD_VER);
+			byte[] type = BitConverter.GetBytes(msgtype);
+			byte[] modid = BitConverter.GetBytes(m_modId);
+			byte[] mid = BitConverter.GetBytes(message.id);
+			byte[] ttl = BitConverter.GetBytes(message.ttl);
+			byte[] vx = BitConverter.GetBytes(message.origin.X);
+			byte[] vy = BitConverter.GetBytes(message.origin.Y);
+			byte[] options = new byte[1] { (byte)message.options };
+			byte[] cx = BitConverter.GetBytes(message.bbcolor.X);
+			byte[] cy = BitConverter.GetBytes(message.bbcolor.Y);
+			byte[] cz = BitConverter.GetBytes(message.bbcolor.Z);
+			byte[] cw = BitConverter.GetBytes(message.bbcolor.W);
+			byte[] scale = BitConverter.GetBytes(message.scale);
+			byte[] rot = BitConverter.GetBytes(message.rotation);
+			byte[] encode = Encoding.UTF8.GetBytes(message.material);
+			byte[] msg = new byte[ver.Length + type.Length + cx.Length * 4 + scale.Length + modid.Length + mid.Length + ttl.Length + vx.Length + vy.Length + encode.Length + options.Length + rot.Length];
+			int lth = 0;
+			Copy(ref msg, ref ver, ref lth);
+			Copy(ref msg, ref type, ref lth);
+			Copy(ref msg, ref modid, ref lth);
+			Copy(ref msg, ref mid, ref lth);
+			Copy(ref msg, ref ttl, ref lth);
+			Copy(ref msg, ref vx, ref lth);
+			Copy(ref msg, ref vy, ref lth);
+			Copy(ref msg, ref options, ref lth);
+			Copy(ref msg, ref cx, ref lth);
+			Copy(ref msg, ref cy, ref lth);
+			Copy(ref msg, ref cz, ref lth);
+			Copy(ref msg, ref cw, ref lth);
+			Copy(ref msg, ref scale, ref lth);
+			Copy(ref msg, ref rot, ref lth);
 			Copy(ref msg, ref encode, ref lth);
 			return msg;
 		}
