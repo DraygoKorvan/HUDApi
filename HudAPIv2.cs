@@ -130,6 +130,7 @@ namespace Draygo.API
 			None = 0x0,
 			HideHud = 0x1,
 			Shadowing = 0x2,
+			Fixed = 0x4
 		}
 
 		private enum MessageBaseMembers : int
