@@ -230,7 +230,7 @@ namespace Draygo.API
 			public abstract void DeleteMessage();
 
 			/// <summary>
-			/// Gets the offset of the lower right corner of the text element from the upper left. The value returned is a local translation. Screen space for screen messages, world space for world messages.  
+			/// Gets the offset of the lower right corner of the text element from the upper left. The value returned is a local translation. Screen space for screen messages, world space for world messages. Please note that the Y value is negative in screen space. 
 			/// </summary>
 			/// <returns>Lower Right Corner</returns>
 			public Vector2D GetTextLength()
@@ -324,7 +324,7 @@ namespace Draygo.API
 				}
 				set
 				{
-					instance.MessageSet(BackingObject, (int)EntityMembers.Orientation, (int)value);
+					instance.MessageSet(BackingObject, (int)EntityMembers.Orientation, (byte)value);
 				}
 			}
 
