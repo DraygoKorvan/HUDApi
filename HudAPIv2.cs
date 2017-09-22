@@ -773,7 +773,7 @@ namespace Draygo.API
 				}
 				set
 				{
-					instance.MessageSet(BackingObject, (int)EntityMembers.TxtOrientation, (int)value);
+					instance.MessageSet(BackingObject, (int)EntityMembers.TxtOrientation, (byte)value);
 				}
 			}
 			#endregion
