@@ -9,7 +9,7 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
-
+using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
 
 namespace Draygo.API
 {
@@ -140,7 +140,8 @@ namespace Draygo.API
 			TimeToLive,
 			Scale,
 			TextLength,
-			Offset
+			Offset,
+			BlendType
 		}
 
 		public abstract class MessageBase
@@ -223,6 +224,21 @@ namespace Draygo.API
 				set
 				{
 					instance.MessageSet(BackingObject, (int)MessageBaseMembers.Offset, value);
+				}
+			}
+
+			/// <summary>
+			/// put using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum; on top of your script to use this property.
+			/// </summary>
+			public BlendTypeEnum Blend
+			{
+				get
+				{
+					return (BlendTypeEnum)(instance.MessageGet(BackingObject, (int)MessageBaseMembers.BlendType));
+				}
+				set
+				{
+					instance.MessageSet(BackingObject, (int)MessageBaseMembers.BlendType, value);
 				}
 			}
 			#endregion
@@ -386,7 +402,7 @@ namespace Draygo.API
 				}
 
 			}
-			public EntityMessage(StringBuilder Message, IMyEntity Entity, Vector3D LocalPosition, Vector3D Forward, Vector3D Up, int TimeToLive = -1, double Scale = 1, TextOrientation Orientation = TextOrientation.ltr, Vector2D? Offset = null, Vector2D? Max = null)
+			public EntityMessage(StringBuilder Message, IMyEntity Entity, Vector3D LocalPosition, Vector3D Forward, Vector3D Up, int TimeToLive = -1, double Scale = 1, TextOrientation Orientation = TextOrientation.ltr, Vector2D? Offset = null, Vector2D? Max = null, BlendTypeEnum Blend = BlendTypeEnum.Standard)
 			{
 				instance.RegisterCheck();
 				BackingObject = instance.CreateMessage(MessageTypes.EntityMessage);
@@ -403,6 +419,7 @@ namespace Draygo.API
 					this.Scale = Scale;
 					this.Visible = true;
 					this.Orientation = Orientation;
+					this.Blend = Blend;
 					if (Offset.HasValue)
 					{
 						this.Offset = Offset.Value;
@@ -491,7 +508,7 @@ namespace Draygo.API
 			}
 			#endregion
 
-			public HUDMessage(StringBuilder Message, Vector2D Origin, Vector2D? Offset = null, int TimeToLive = -1,   double Scale = 1.0d, bool HideHud = true, bool Shadowing = false, Color? ShadowColor = null)
+			public HUDMessage(StringBuilder Message, Vector2D Origin, Vector2D? Offset = null, int TimeToLive = -1,   double Scale = 1.0d, bool HideHud = true, bool Shadowing = false, Color? ShadowColor = null, BlendTypeEnum Blend = BlendTypeEnum.SDR)
 			{
 				instance.RegisterCheck();
 				BackingObject = instance.CreateMessage(MessageTypes.HUDMessage);
@@ -509,6 +526,7 @@ namespace Draygo.API
 						ShadowColor = ShadowColor.Value;
 					this.Scale = Scale;
 					this.Message = Message;
+					this.Blend = Blend;
 					if (Offset.HasValue)
 					{
 						this.Offset = Offset.Value;
@@ -658,7 +676,7 @@ namespace Draygo.API
 			}
 			#endregion
 
-			public BillBoardHUDMessage(MyStringId Material, Vector2D Origin, Color BillBoardColor, Vector2D? Offset = null, int TimeToLive = -1, double Scale = 1d, float Width = 1f, float Height = 1f, float Rotation = 0, bool HideHud = true, bool Shadowing = true)
+			public BillBoardHUDMessage(MyStringId Material, Vector2D Origin, Color BillBoardColor, Vector2D? Offset = null, int TimeToLive = -1, double Scale = 1d, float Width = 1f, float Height = 1f, float Rotation = 0, bool HideHud = true, bool Shadowing = true, BlendTypeEnum Blend = BlendTypeEnum.SDR)
 			{
 				instance.RegisterCheck();
 				BackingObject = instance.CreateMessage(MessageTypes.BillBoardHUDMessage);
@@ -676,6 +694,7 @@ namespace Draygo.API
 					this.Scale = Scale;
 					this.Material = Material;
 					this.Rotation = Rotation;
+					this.Blend = Blend;
 					if (Offset.HasValue)
 					{
 						this.Offset = Offset.Value;
@@ -779,7 +798,7 @@ namespace Draygo.API
 			#endregion
 
 
-			public SpaceMessage(StringBuilder Message, Vector3D WorldPosition, Vector3D Up, Vector3D Left, double Scale = 1, Vector2D? Offset = null, int TimeToLive = -1,  TextOrientation TxtOrientation = TextOrientation.ltr)
+			public SpaceMessage(StringBuilder Message, Vector3D WorldPosition, Vector3D Up, Vector3D Left, double Scale = 1, Vector2D? Offset = null, int TimeToLive = -1,  TextOrientation TxtOrientation = TextOrientation.ltr, BlendTypeEnum Blend = BlendTypeEnum.Standard)
 			{
 				instance.RegisterCheck();
 				BackingObject = instance.CreateMessage(MessageTypes.SpaceMessage);
@@ -792,6 +811,7 @@ namespace Draygo.API
 					this.Left = Left;
 					this.TxtOrientation = TxtOrientation;
 					this.Message = Message;
+					this.Blend = Blend;
 					if (Offset.HasValue)
 					{
 						this.Offset = Offset.Value;
